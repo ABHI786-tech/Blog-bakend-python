@@ -1,24 +1,26 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from cors.database import engine, get_db, Base
+from router.user_routers import router
+from cors.database import engine, get_db
+from cors.hashing import Hash
 from models import usersModel
-from schemas.usersSchema import Create
+from schemas.users_schema import Create, ShowUser
+from config import token
+from router.blog_routes import blog_route
 
-app = FastAPI()
+
+app = FastAPI(swagger_ui_parameters={"persistAuthorization": True})
 
 usersModel.Base.metadata.create_all(engine)
 
+
 @app.get("/")
 def dashboard():
-    return "hello welcome to our Blog Dashboard"
+    return {"message": "Hello welcome to our Blog Dashboard"}
+
+app.include_router(router)
+app.include_router(blog_route)
 
 
-@app.post("/signup")
-def create(request: Create, db:Session = Depends(get_db)):
-    # hashed_password = Hash.bcrypt(request.password)
-    create_user =usersModel.Users(name=request.name, email=request.email, password=request.password)
-    db.add(create_user)
-    db.commit()
-    db.refresh(create_user)
-    return create_user
